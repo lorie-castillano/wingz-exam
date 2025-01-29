@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
 from core import models, serializers
 from permissions import IsAdminUser
@@ -14,12 +15,19 @@ class RideViewSet(viewsets.ModelViewSet):
     queryset = models.Ride.objects.all()
     serializer_class = serializers.RideSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminUser]
-    
+
+    # def get_serializer_class(self):
+    #     if self.action in ["list", "retrieve"]:
+    #         return serializers.RideListSerializer
+    #     return self.serializer_class
+
     @action(detail=True)
     def pickup(self, request, pk=None):
+        ride = models.Ride.objects.get(pk=pk)
+        if ride.status != "en-route":
+            ValidationError({"details": "Cannot move status to 'pickup'."})
         
         # Update Ride
-        ride = models.Ride.objects.get(pk=pk)
         ride.status = "pickup"
         ride.pickup_time = timezone.now()
         ride.save()
@@ -30,9 +38,11 @@ class RideViewSet(viewsets.ModelViewSet):
 
     @action(detail=True)
     def dropoff(self, request, pk=None):
+        ride = models.Ride.objects.get(pk=pk)
+        if ride.status != "pickup":
+            ValidationError({"details": "Cannot move status to 'dropoff'."})
         
         # Update Ride
-        ride = models.Ride.objects.get(pk=pk)
         ride.status = "dropoff"
         ride.save()
 
