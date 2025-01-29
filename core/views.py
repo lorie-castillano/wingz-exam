@@ -5,6 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from core import models, serializers
+from permissions import IsAdminUser
 
 User = get_user_model()
 
@@ -12,8 +13,7 @@ User = get_user_model()
 class RideViewSet(viewsets.ModelViewSet):
     queryset = models.Ride.objects.all()
     serializer_class = serializers.RideSerializer
-    # permission_classes = [permissions.IsAuthenticated]
-    permission_classes = [permissions.AllowAny]
+    permission_classes = [permissions.IsAuthenticated, IsAdminUser]
     
     @action(detail=True)
     def pickup(self, request, pk=None):
