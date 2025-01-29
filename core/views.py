@@ -1,12 +1,14 @@
 from django.utils import timezone
 from django.contrib.auth import get_user_model
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.exceptions import ValidationError
+from django_filters.rest_framework import DjangoFilterBackend
 
 from core import models, serializers
 from permissions import IsAdminUser
+from core import filters as core_filters
 
 User = get_user_model()
 
@@ -15,11 +17,9 @@ class RideViewSet(viewsets.ModelViewSet):
     queryset = models.Ride.objects.all()
     serializer_class = serializers.RideSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminUser]
-
-    # def get_serializer_class(self):
-    #     if self.action in ["list", "retrieve"]:
-    #         return serializers.RideListSerializer
-    #     return self.serializer_class
+    filterset_class = core_filters.RideListFilterSet
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    ordering_fields = ['pickup_time']
 
     @action(detail=True)
     def pickup(self, request, pk=None):
