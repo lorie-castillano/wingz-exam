@@ -25,7 +25,7 @@ class RideViewSet(viewsets.ModelViewSet):
     def pickup(self, request, pk=None):
         ride = models.Ride.objects.get(pk=pk)
         if ride.status != "en-route":
-            ValidationError({"details": "Cannot move status to 'pickup'."})
+            raise ValidationError({"details": "Cannot move status to 'pickup'."})
         
         # Update Ride
         ride.status = "pickup"
@@ -40,7 +40,7 @@ class RideViewSet(viewsets.ModelViewSet):
     def dropoff(self, request, pk=None):
         ride = models.Ride.objects.get(pk=pk)
         if ride.status != "pickup":
-            ValidationError({"details": "Cannot move status to 'dropoff'."})
+            raise ValidationError({"details": "Cannot move status to 'dropoff'."})
         
         # Update Ride
         ride.status = "dropoff"
