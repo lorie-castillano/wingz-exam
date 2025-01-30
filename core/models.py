@@ -1,3 +1,4 @@
+from django.utils import timezone
 from django.contrib.auth.models import AbstractBaseUser, UserManager
 from django.contrib.gis.db import models as gis_models
 from django.conf import settings
@@ -59,9 +60,24 @@ class Ride(models.Model):
     pickup_time = models.DateTimeField(null=True, blank=True)
     pickup_location = gis_models.PointField(srid=4326)
 
+    def pickup(self):
+        self.status = "pickup"
+        if not self.pickup_time:
+            self.pickup_time = timezone.now()
+        self.save()
+
+    def dropoff(self):
+        self.status = "dropoff"
+        self.save()
+
 
 class RideEvent(models.Model):
     id_ride_event = models.AutoField(primary_key=True)
-    id_ride = models.ForeignKey("Ride", null=True, blank=True, on_delete=models.CASCADE)
-    description = models.CharField(max_length=50, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    id_ride = models.ForeignKey("Ride", on_delete=models.CASCADE)
+    description = models.CharField(max_length=50)
+    created_at = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        if not self.created_at:
+            self.created_at = timezone.now()
+        return super(RideEvent, self).save(*args, **kwargs)

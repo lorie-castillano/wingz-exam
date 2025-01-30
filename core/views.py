@@ -1,12 +1,8 @@
-from django.utils import timezone
 from django.contrib.auth import get_user_model
 from django.contrib.gis.geos import Point
 from rest_framework_gis.filters import DistanceToPointOrderingFilter
 
 from rest_framework import permissions, viewsets, filters
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.exceptions import ValidationError
 from django_filters.rest_framework import DjangoFilterBackend
 
 from core import models, serializers
@@ -41,31 +37,8 @@ class RideViewSet(viewsets.ModelViewSet):
         print(request.data)
         return super(RideViewSet, self).create(request, *args, **kwargs)
 
-    @action(detail=True)
-    def pickup(self, request, pk=None):
-        ride = models.Ride.objects.get(pk=pk)
-        if ride.status != "en-route":
-            raise ValidationError({"details": "Cannot move status to 'pickup'."})
-        
-        # Update Ride
-        ride.status = "pickup"
-        ride.pickup_time = timezone.now()
-        ride.save()
 
-        # Create RideEvent
-        models.RideEvent.objects.create(id_ride=ride, description='Status changed to pickup')
-        return Response("picked up")
-
-    @action(detail=True)
-    def dropoff(self, request, pk=None):
-        ride = models.Ride.objects.get(pk=pk)
-        if ride.status != "pickup":
-            raise ValidationError({"details": "Cannot move status to 'dropoff'."})
-        
-        # Update Ride
-        ride.status = "dropoff"
-        ride.save()
-
-        # Create RideEvent
-        models.RideEvent.objects.create(id_ride=ride, description='Status changed to dropoff')
-        return Response("dropped off")
+class RideEventViewSet(viewsets.ModelViewSet):
+    queryset = models.RideEvent.objects.all()
+    serializer_class = serializers.RideEventSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminUser]
