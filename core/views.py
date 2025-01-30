@@ -1,5 +1,8 @@
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.contrib.gis.geos import Point
+from rest_framework_gis.filters import DistanceToPointOrderingFilter
+
 from rest_framework import permissions, viewsets, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -18,8 +21,25 @@ class RideViewSet(viewsets.ModelViewSet):
     serializer_class = serializers.RideSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminUser]
     filterset_class = core_filters.RideListFilterSet
-    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filter_backends = [
+        DjangoFilterBackend,
+        filters.OrderingFilter,
+        DistanceToPointOrderingFilter,
+    ]
     ordering_fields = ['pickup_time']
+    distance_ordering_filter_field = 'pickup_location'
+
+    def get_serializer_class(self):
+        if self.action in ["list", "retrieve"]:
+            return serializers.RideListSerializer
+        return self.serializer_class
+
+    def create(self, request, *args, **kwargs):
+        lat = request.data.get("pickup_latitude")
+        lon = request.data.get("pickup_longitude")
+        request.data["pickup_location"] = Point(lat, lon, srid=4326)
+        print(request.data)
+        return super(RideViewSet, self).create(request, *args, **kwargs)
 
     @action(detail=True)
     def pickup(self, request, pk=None):

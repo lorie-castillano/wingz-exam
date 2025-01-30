@@ -1,5 +1,7 @@
+from datetime import datetime, timedelta
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
+from rest_framework_gis.serializers import GeoFeatureModelSerializer
 from core import models
 
 
@@ -19,26 +21,29 @@ class RideEventSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class RideSerializer(serializers.ModelSerializer):
-    ride_events = serializers.SerializerMethodField(read_only=True)
-    
+class RideSerializer(GeoFeatureModelSerializer):
     class Meta:
         model = models.Ride
+        geo_field = "pickup_location"
+        fields = "__all__"
+
+
+class RideListSerializer(GeoFeatureModelSerializer):
+    ride_events = serializers.SerializerMethodField()
+    id_rider = UserSerializer()
+    id_driver = UserSerializer()
+    class Meta:
+        model = models.Ride
+        geo_field = "pickup_location"
         fields = "__all__"
 
     def get_ride_events(self, obj):
-        ride_events = models.RideEvent.objects.filter(id_ride=obj.id_ride)
-        serializer = RideEventSerializer(ride_events, many=True)
+        datetime_now = datetime.now()
+        last_24_hrs = datetime.now() - timedelta(hours=24)
+        todays_ride_events = (
+            models.RideEvent.objects
+            .filter(id_ride=obj.id_ride)
+            .filter(created_at__gte=last_24_hrs, created_at__lte=datetime_now)
+        )
+        serializer = RideEventSerializer(todays_ride_events, many=True)
         return serializer.data
-
-    def to_representation(self, instance):
-        response = super().to_representation(instance)
-        id_rider = User.objects.get(pk=response["id_rider"])
-        rider_serializer = UserSerializer(id_rider)
-        response["id_rider"] = rider_serializer.data
-
-        id_driver = User.objects.get(pk=response["id_driver"])
-        driver_serializer = UserSerializer(id_driver)
-        response["id_driver"] = driver_serializer.data
-        
-        return response

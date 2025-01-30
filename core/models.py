@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractBaseUser, UserManager
+from django.contrib.gis.db import models as gis_models
 from django.conf import settings
 from django.db import models
 from model_utils import Choices
@@ -56,6 +57,7 @@ class Ride(models.Model):
     dropoff_latitude = models.FloatField()
     dropoff_longitude = models.FloatField()
     pickup_time = models.DateTimeField(null=True, blank=True)
+    pickup_location = gis_models.PointField(srid=4326)
 
 
 class RideEvent(models.Model):
