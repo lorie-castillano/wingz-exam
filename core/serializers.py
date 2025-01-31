@@ -62,6 +62,7 @@ class RideSerializer(GeoFeatureModelSerializer):
         model = models.Ride
         geo_field = "pickup_location"
         fields = "__all__"
+        read_only_fields = ("status", "pickup_time",)
 
     def validate_id_driver(self, id_driver):
         if id_driver.role != "driver":
@@ -72,6 +73,9 @@ class RideSerializer(GeoFeatureModelSerializer):
         booked_driver = models.Ride.objects.filter(id_driver=id_driver).exclude(
             status="dropoff"
         )
+        if self.instance:
+            booked_driver = booked_driver.exclude(id_ride=self.instance.pk)
+
         if booked_driver.exists():
             raise serializers.ValidationError(
                 {"details": "`id_driver` provided has current booking."}
@@ -87,6 +91,9 @@ class RideSerializer(GeoFeatureModelSerializer):
         booked_rider = models.Ride.objects.filter(id_rider=id_rider).exclude(
             status="dropoff"
         )
+        if self.instance:
+            booked_rider = booked_rider.exclude(id_ride=self.instance.pk)
+
         if booked_rider.exists():
             raise serializers.ValidationError(
                 {"details": "`id_rider` provided has current booking."}
