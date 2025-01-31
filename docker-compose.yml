@@ -1,0 +1,41 @@
+# Specifies which syntax version of Docker compose
+version: '3'
+
+# Build a multiservice arhitecture.
+services:
+  db:
+    platform: linux/amd64
+    build: ./postgres
+    restart: always
+    volumes:
+      - ./data/postgresql:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+  core:
+    platform: linux/amd64
+    build: .
+    command: bash -c 'while !</dev/tcp/db/5432; do sleep 1; done; python manage.py runserver 0.0.0.0:8000'
+    container_name: core
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file:
+      - .env
+  pgadmin:
+    platform: linux/amd64
+    image: dpage/pgadmin4:6.12
+    container_name: pgadmin
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=admin@gmail.com
+      - PGADMIN_DEFAULT_PASSWORD=admin
+      - PGADMIN_LISTEN_PORT=5050
+    ports:
+      - "5050:5050"
+volumes:
+  database-data:
